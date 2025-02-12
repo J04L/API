@@ -5,7 +5,7 @@ const mongoose = require("mongoose")
 //rutas del router
 const usuariosRutas = require('./router/usuarios.js')
 const habitacionesRutas = require('./router/habitaciones.js')
-
+const reservasRutas = require('./router/reservas.js')
 const app = express()
 
 //midelware
@@ -15,6 +15,8 @@ app.use(bodyParser.json());
 //rutas de modulos
 app.use('/usuarios', usuariosRutas)
 app.use('/api', habitacionesRutas)
+app.use('/img', express.static('img'))
+app.use('/api/reservas',reservasRutas)
 
 mongoose.connect('mongodb+srv://Joel:1234@cluster0.ysfuq.mongodb.net/HOTEL')
 .then(console.log('Conexión BDD existosa'))
