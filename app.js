@@ -1,6 +1,9 @@
 const bodyParser = require("body-parser")
 const express = require("express")
 const mongoose = require("mongoose")
+
+//rutas del router
+const usuariosRutas = require('./router/usuarios.js')
 const habitacionesRutas = require('./router/habitaciones.js')
 
 const app = express()
@@ -9,7 +12,8 @@ const app = express()
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-//rutas de habitacion
+//rutas de modulos
+app.use('/api', usuariosRutas)
 app.use('/api', habitacionesRutas)
 
 mongoose.connect('mongodb+srv://Joel:1234@cluster0.ysfuq.mongodb.net/HOTEL')
