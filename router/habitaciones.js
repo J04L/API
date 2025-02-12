@@ -4,7 +4,35 @@ const {Habitacion, TipoHabitacion} = require('../modules/habitaciones')
 //devuelve todas las habitaciones
 router.get("/habitacion", async (req, res) =>{
     try{
-        const habitaciones = await Habitacion.find()
+      let { nombreTipo, precioMin, precioMax, cantHuespedes, disponible, pisoMin, pisoMax } = req.query;
+      let filtro = {};
+
+      // Filtrar por tipo de habitación
+      if (nombreTipo) filtro["tipoHabitacion.nombreTipo"] = nombreTipo;
+
+      // Filtrar por precio mínimo y máximo
+      if (precioMin) filtro.precio = { $gte: parseFloat(precioMin) };
+      if (precioMax) filtro.precio = { ...filtro.precio, $lte: parseFloat(precioMax) };
+
+      // Filtrar por cantidad de huéspedes (adultos + menores)
+      if (cantHuespedes) {
+          cantHuespedes = parseInt(cantHuespedes);
+          filtro.$expr = {
+              $gte: [
+                  { $add: ["$tipoHabitacion.capacidadPersonas.adultos", "$tipoHabitacion.capacidadPersonas.menores"] },
+                  cantHuespedes
+              ]
+          };
+      }
+
+      // Filtrar por disponibilidad
+      if (disponible !== undefined) filtro.disponible = disponible === "true";
+
+      // Filtrar por rango de pisos
+      if (pisoMin) filtro.piso = { $gte: parseInt(pisoMin) };
+      if (pisoMax) filtro.piso = { ...filtro.piso, $lte: parseInt(pisoMax) };
+        console.log(filtro, req.query)
+        const habitaciones = await Habitacion.find(filtro)
         res.status(200).json(habitaciones)
         
     }catch(error){
@@ -43,7 +71,30 @@ router.delete("/habitacion/:id", async (req, res) =>{
         res.status(400).json({ error: error.message });
       }
 })
-
+router.get('/habitacionPrecioMax', async (req, res) => {
+  try{const PrecioMax = await Habitacion.aggregate([
+    { $sort: { "precio": -1 } },
+    { $limit: 1 },
+  { $project: { _id: 0, "precio": 1 } }
+  ])
+  res.status(200).json(PrecioMax[0].precio)
+}
+  catch (error){
+    res.status(400).json({ error: error.message })
+  }
+})
+router.get('/habitacionPisoMax', async (req, res) => {
+  try{const pisoMax = await Habitacion.aggregate([
+    { $sort: { "piso": -1 } },
+    { $limit: 1 },
+  { $project: { _id: 0, "piso": 1 } }
+  ])
+  res.status(200).json(pisoMax[0].piso)
+}
+  catch (error){
+    res.status(400).json({ error: error.message })
+  }
+})
 //actualiza la habitación por el id del parámetro
 router.put('/habitacion/:id', async (req, res) => {
     try {
