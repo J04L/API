@@ -11,6 +11,7 @@ app.use(bodyParser.json());
 
 //rutas de habitacion
 app.use('/api', habitacionesRutas)
+app.use('/img', express.static('img'))
 
 mongoose.connect('mongodb+srv://Joel:1234@cluster0.ysfuq.mongodb.net/HOTEL')
 .then(console.log('Conexión BDD existosa'))
