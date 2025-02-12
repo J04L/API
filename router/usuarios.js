@@ -3,8 +3,8 @@ const usuario = require('../modules/usuarios')
 
 router.get("/users", async (req, res) =>{
     try{
-        const habitaciones = await usuario.find()
-        console.log(habitaciones)
+        const usuarios = await usuario.find()
+        console.log(usuarios)
 
         res.status(200).json(this.usuario)
     }catch(error){
@@ -25,7 +25,7 @@ router.post("/newUser", async (req, res) =>{
 router.post('/getOne', async (req, res) => {
     try {
         const user = req.body.username;  // Aquí deberías usar req.query o req.params si es un GET
-        const usuariosDB = await ModelUser.findOne({ username: user });
+        const usuariosDB = await ModelUser.find({ email: user });
         console.log(usuariosDB);
 
         if (!usuariosDB) {
@@ -40,27 +40,38 @@ router.post('/getOne', async (req, res) => {
 
 router.post('/getFilter', async (req, res) => {
     try {
-        // Construye el objeto de condiciones basado en los campos del json proporcionado
         const condiciones = {};
-        if (req.body.nombre) condiciones.nombre = req.body.nombre;
-        if (req.body.email) condiciones.email = req.body.email;
+
+        // Búsqueda exacta
         if (req.body.username) condiciones.username = req.body.username;
         if (req.body.password) condiciones.password = req.body.password;
         if (req.body.role) condiciones.role = req.body.role;
-        if (req.body.birthday) condiciones.birthday = req.body.birthday;
         if (req.body.sex) condiciones.sex = req.body.sex;
 
+        // Búsqueda parcial (case-insensitive)
+        if (req.body.nombre) condiciones.nombre = { $regex: req.body.nombre, $options: 'i' };
+        if (req.body.email) condiciones.email = { $regex: req.body.email, $options: 'i' };
 
+        // Fecha exacta o búsqueda por rango de fechas
+        if (req.body.birthday) {
+            if (typeof req.body.birthday === 'object' && req.body.birthday.start && req.body.birthday.end) {
+                condiciones.birthday = { $gte: new Date(req.body.birthday.start), $lte: new Date(req.body.birthday.end) };
+            } else {
+                condiciones.birthday = new Date(req.body.birthday);
+            }
+        }
+
+        // Consulta a la base de datos
         const data = await ModelUser.find(condiciones);
         if (data.length === 0) {
             return res.status(404).json({ message: 'Documento no encontrado' });
         }
         res.status(200).json(data);
-    }
-    catch (error) {
+    } catch (error) {
         res.status(500).json({ message: error.message });
     }
-})
+});
+
 
 router.patch("/update", async (req, res) => {
     try {
