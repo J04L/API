@@ -6,21 +6,24 @@ router.get("/users", async (req, res) =>{
         const usuarios = await usuario.find()
         console.log(usuarios)
 
-        res.status(200).json(this.usuario)
+        res.status(200).json(usuarios)
     }catch(error){
         res.status(400).json({message: 'Error al obtener usuarios', error})
     }
 })
 
-router.post("/newUser", async (req, res) =>{
-    try{
-        const nuevoUsuario = new usuario(req.body)
-        const guardarUsuario = await nuevoUsuario.save()
-        res.status(200).json(guardarUsuario)
-    }catch(error){
-        res.status(400).json({message: 'Error al crear usuarios', error})
+router.post("/newUser", async (req, res) => {
+    console.log("Request body:", req.body);  // Agrega esto para ver qué datos llegan
+    try {
+        const nuevoUsuario = new usuario(req.body);
+        const guardarUsuario = await nuevoUsuario.save();
+        res.status(200).json(guardarUsuario);
+        console.log('Guardado con exito');
+    } catch (error) {
+        console.error("Error al crear usuario:", error);  // Imprime el error en el servidor
+        res.status(400).json({ message: 'Error al crear usuarios', error });
     }
-})
+});
 
 router.post('/getOne', async (req, res) => {
     try {
