@@ -16,7 +16,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 //rutas de modulos
-app.use('/api', usuariosRutas)
+app.use('/usuarios', usuariosRutas)
 app.use('/api', habitacionesRutas)
 app.use('/img', express.static('img'))
 app.use('/api/reservas',reservasRutas)
