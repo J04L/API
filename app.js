@@ -1,6 +1,9 @@
 const bodyParser = require("body-parser")
 const express = require("express")
 const mongoose = require("mongoose")
+require('dotenv').config();
+const PORT = process.env.PORT;
+const mongoString = process.env.DATABASE_URL;
 
 //rutas del router
 const usuariosRutas = require('./router/usuarios.js')
@@ -18,7 +21,7 @@ app.use('/api', habitacionesRutas)
 app.use('/img', express.static('img'))
 app.use('/api/reservas',reservasRutas)
 
-mongoose.connect('mongodb+srv://Joel:1234@cluster0.ysfuq.mongodb.net/HOTEL')
+mongoose.connect(mongoString)
 .then(console.log('Conexión BDD existosa'))
 .catch(error => console.log('Error al intentar conectar con la BDD', error))
 
@@ -28,5 +31,5 @@ app.get("/", (req, res) => {
 })
 
 app.listen(3036, () =>{
-    console.log("Escuchando por el puerto http://localhost:3036")
+    console.log(`Escuchando por el puerto ${PORT}`)
 })
