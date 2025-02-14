@@ -41,7 +41,7 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ["Admin","Empleado", "Cliente"], // Roles permitidos
     default: "Cliente", // Rol por defecto
- },    
+ },   
  avatar: {
     type: String
  } 
