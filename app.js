@@ -1,6 +1,7 @@
 const bodyParser = require("body-parser")
 const express = require("express")
 const mongoose = require("mongoose")
+const cors = require("cors");
 
 //rutas del router
 const usuariosRutas = require('./router/usuarios.js')
@@ -11,6 +12,7 @@ const app = express()
 //midelware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.use(cors())
 
 //rutas de modulos
 app.use('/api', usuariosRutas)

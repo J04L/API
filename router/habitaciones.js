@@ -1,5 +1,18 @@
 const router = require('express').Router()
 const {Habitacion, TipoHabitacion} = require('../modules/habitaciones')
+const multer = require("multer");
+const path = require("path");
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      cb(null, "img/habitaciones/habCreadas"); // Carpeta donde se guardan las imágenes
+  },
+  filename: (req, file, cb) => {
+      cb(null, Date.now() + path.extname(file.originalname)); // Nombre único
+  }
+});
+
+const upload = multer({ storage: storage });
 
 //devuelve todas las habitaciones
 router.get("/habitacion", async (req, res) =>{
@@ -31,8 +44,14 @@ router.get("/habitacion", async (req, res) =>{
       // Filtrar por rango de pisos
       if (pisoMin) filtro.piso = { $gte: parseInt(pisoMin) };
       if (pisoMax) filtro.piso = { ...filtro.piso, $lte: parseInt(pisoMax) };
-        console.log(filtro, req.query)
+        
         const habitaciones = await Habitacion.find(filtro)
+
+        const baseurl = "http://localhost:3036/img/"
+        habitaciones.forEach(habitacion =>{
+          habitacion["fotos"] = habitacion["fotos"].map(url => baseurl + url)
+        })
+        console.log(habitaciones)
         res.status(200).json(habitaciones)
         
     }catch(error){
@@ -45,28 +64,61 @@ router.get("/habitacion/:id", async (req, res) =>{
     try{
         const habitacion = await Habitacion.findById(req.params.id)
         res.status(200).json(habitacion)
+
     }catch(error){
         res.status(400).json({message: 'Error al obtener habitacion', error})
     }
 })
 
 //crea una habitación
-router.post("/habitacion", async (req, res) =>{
+router.post("/habitacion",  upload.array("imagen"), async (req, res) =>{
     try{
-        const nuevaHabitacion = new Habitacion(req.body)
-        const guardarHabitacion = await nuevaHabitacion.save()
-        res.status(200).json(guardarHabitacion)
+        // Convertir el JSON recibido a objeto JavaScript
+        let habitacionData = JSON.parse(req.body.habitacion);
+        // Agregar las rutas de las imágenes al objeto antes de guardarlo
+        let nuevaHabitacion = new Habitacion({
+          numeroHabitacion: habitacionData.numeroHabitacion,
+          tipoHabitacion: {
+              nombreTipo: habitacionData.tipoHabitacion.nombreTipo,
+              precioBase: habitacionData.tipoHabitacion.precioBase,
+              capacidadPersonas: {
+                  adultos: habitacionData.tipoHabitacion.capacidadPersonas.adultos,
+                  menores: habitacionData.tipoHabitacion.capacidadPersonas.menores
+              },
+              capacidadCamas: habitacionData.tipoHabitacion.capacidadCamas
+          },
+          descripcion: habitacionData.descripcion,
+          precio: habitacionData.precio,
+          fotos: ["imagen"], // Aquí almacenamos las rutas de las imágenes subidas
+          camas: {
+              individual: habitacionData.camas.individual,
+              doble: habitacionData.camas.doble
+          },
+          dimensiones: habitacionData.dimesiones, // Corregí el nombre de la propiedad a "dimensiones"
+          disponible: habitacionData.disponible,
+          piso: habitacionData.piso
+      });
+      console.log(nuevaHabitacion)
+        // Guardar en MongoDB
+        await nuevaHabitacion.save();
+        res.status(200).json(nuevaHabitacion)
     }catch(error){
         res.status(400).json({message: 'Error al crear habitacion', error})
     }
 })
 
 //elimina la habitación especificada en los parámetros
-router.delete("/habitacion/:id", async (req, res) =>{
+router.delete("/habitacion/:numero", async (req, res) =>{
     try {
-        const habitacion = await Habitacion.findByIdAndDelete(req.params.id);
-        if (!habitacion) return res.status(404).json({ error: 'habitacion no encontrada' });
-        res.status(200).json({ mensaje: 'habitacion eliminada correctamente' });
+        const habitacion = await Habitacion.deleteOne(
+          {numeroHabitacion: req.params.numero}
+        )
+        // Verificar si se eliminó correctamente
+        if (resultado.deletedCount > 0) {
+          res.json({ message: "Habitación eliminada correctamente" });
+      } else {
+          res.status(404).json({ message: "No se encontró la habitación" });
+      }
       } catch (error) {
         res.status(400).json({ error: error.message });
       }
@@ -96,15 +148,17 @@ router.get('/habitacionPisoMax', async (req, res) => {
   }
 })
 //actualiza la habitación por el id del parámetro
-router.put('/habitacion/:id', async (req, res) => {
+router.put('/habitacion/:numero', async (req, res) => {
     try {
-      const habitacion = await Habitacion.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true } // Devuelve el documento actualizado
-      );
-      if (!habitacion) return res.status(404).json({ error: 'habitacion no encontrada' });
-      res.status(200).json(habitacion);
+      const habitacion = await Habitacion.updateOne(
+        {numeroHabitacion: req.params.numero},
+        {$set: req.body}
+      )
+      if (habitacion.modifiedCount > 0) {
+        res.json({ message: "Habitación actualizada correctamente" });
+    } else {
+        res.status(404).json({ message: "No se encontró la habitación o no hubo cambios" });
+    }
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
