@@ -14,10 +14,44 @@ router.get("/users", async (req, res) => {
     }
 });
 
+// Endpoint de login
+router.post('/login', async (req, res) => {
+    try {
+        // Validaciones
+        if (!req.body || !req.body.email || !req.body.password) {
+            return res.status(400).json({ error: "Email y contraseña son requeridos" });
+        }
+
+        const user = await usuarios.findOne({ email: req.body.email });
+
+        if (!user) {
+            return res.status(400).json({ error: 'Usuario no encontrado' });
+        }
+
+        const validPassword = await bcrypt.compare(req.body.password, user.password);
+
+        if (!validPassword) {
+            return res.status(400).json({ error: 'Contraseña no válida' });
+        }
+
+        if (user.role !== 'Administrador' && user.role !== 'Empleado') {
+            return res.status(403).json({ error: 'Acceso denegado. Solo los Empleados/Administradores pueden iniciar sesión.' });
+        }
+
+        // ✅ Si pasa todas las validaciones, se devuelve el usuario (sin la contraseña)
+        const { password, ...userData } = user.toObject();  // Elimina la contraseña de la respuesta
+        return res.status(200).json({ message: 'Login exitoso', user: userData });
+
+    } catch (error) {
+        console.error("Error en /login:", error);
+        return res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
+
+
 // Crear un nuevo usuario
 router.post("/newUser", async (req, res) => {
     console.log("Request body:", req.body);
-
     try {
         let { password, ...userData } = req.body;
         if (!password) {
@@ -32,7 +66,6 @@ router.post("/newUser", async (req, res) => {
             ...userData,
             password: hashedPassword,
         });
-        console.log("llega");
         const guardarUsuario = await nuevoUsuario.save();
         res.status(200).json(guardarUsuario);
         console.log("Usuario guardado con éxito");
@@ -154,12 +187,10 @@ router.post("/update/:id", async (req, res) => {
   
       // Verificamos si se proporciona una nueva contraseña
       if (password) {
-        console.log("llega");
         const salt = await bcrypt.genSalt(10);
         updateFields.password = await bcrypt.hash(password, salt);
       }
   
-      console.log('llega');
 
       // Actualizamos el usuario usando el _id
       const usuario = await usuarios.findByIdAndUpdate(
@@ -167,9 +198,6 @@ router.post("/update/:id", async (req, res) => {
         { $set: updateFields },
         { new: true } // Devuelve el documento actualizado
       );
-
-      console.log('llegaaaa');
-
   
       if (!usuario) {
         return res.status(404).json({ error: 'Usuario no encontrado' });
