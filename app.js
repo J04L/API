@@ -4,6 +4,7 @@ const mongoose = require("mongoose")
 require('dotenv').config();
 const PORT = process.env.PORT;
 const mongoString = process.env.DATABASE_URL;
+const cors = require("cors");
 
 //rutas del router
 const usuariosRutas = require('./router/usuarios.js')
@@ -14,6 +15,7 @@ const app = express()
 //midelware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.use(cors())
 
 //rutas de modulos
 app.use('/usuarios', usuariosRutas)
