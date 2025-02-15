@@ -1,14 +1,16 @@
-const router = require('express').Router()
-const usuario = require('../modules/usuarios')
+const express = require('express');
+const router = express.Router();
+const usuarios = require('../modules/usuarios'); // Importa el modelo correctamente
+const mongoose = require('mongoose'); // Asegúrate de importar mongoose
+const bcrypt= require('bcrypt');
 
-router.get("/users", async (req, res) =>{
-    try{
-        const usuarios = await usuario.find()
-        console.log(usuarios)
-
-        res.status(200).json(usuarios)
-    }catch(error){
-        res.status(400).json({message: 'Error al obtener usuarios', error})
+// Obtener todos los usuarios
+router.get("/users", async (req, res) => {
+    try {
+        const allUsers = await usuarios.find();
+        res.status(200).json(allUsers);
+    } catch (error) {
+        res.status(400).json({ message: 'Error al obtener usuarios', error });
     }
 });
 
@@ -66,54 +68,80 @@ router.post("/newUser", async (req, res) => {
         });
         const guardarUsuario = await nuevoUsuario.save();
         res.status(200).json(guardarUsuario);
-        console.log('Guardado con exito');
+        console.log("Usuario guardado con éxito");
     } catch (error) {
-        console.error("Error al crear usuario:", error);  // Imprime el error en el servidor
-        res.status(400).json({ message: 'Error al crear usuarios', error });
+        console.error("Error al crear usuario:", error);
+        res.status(400).json({ message: "Error al crear usuario", error });
     }
 });
 
-router.post('/getOne', async (req, res) => {
+// Buscar usuario por email para login
+router.post("/getOne", async (req, res) => {
     try {
-        const user = req.body.username;  // Aquí deberías usar req.query o req.params si es un GET
-        const usuariosDB = await ModelUser.find({ email: user });
-        console.log(usuariosDB);
+        const { email, password } = req.body;
+        if (!email) return res.status(400).json({ message: "El email es requerido" });
 
-        if (!usuariosDB) {
-            return res.status(404).json({ message: 'Documento no encontrado' });
+        const usuarioDB = await usuarios.findOne({ email });
+        if (!usuarioDB) return res.status(404).json({ message: "Usuario no encontrado" });
+
+        if (password) {
+            // Verificación de contraseña
+            const esCorrecta = await bcrypt.compare(password, usuarioDB.password);
+            if (!esCorrecta) return res.status(401).json({ message: "Contraseña incorrecta" });
         }
 
-        res.status(200).json(usuariosDB);
+        const { password: _, ...userData } = usuarioDB.toObject(); // Excluimos la contraseña
+        res.status(200).json(userData);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
+// Buscar usuario por ID
+router.post("/getById", async (req, res) => {
+    try {
+        console.log(req.body);
+        const { id } = req.body;
+
+        const usuarioDB = await usuarios.findById(id);
+
+        if (!usuarioDB) return res.status(404).json({ message: "Usuario no encontrado" });
+
+        const { password: _, ...userData } = usuarioDB.toObject(); // Excluir contraseña
+        res.status(200).json(userData);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Filtrar usuarios por diferentes criterios
 router.post('/getFilter', async (req, res) => {
     try {
         const condiciones = {};
 
-        // Búsqueda exacta
-        if (req.body.username) condiciones.username = req.body.username;
-        if (req.body.password) condiciones.password = req.body.password;
-        if (req.body.role) condiciones.role = req.body.role;
-        if (req.body.sex) condiciones.sex = req.body.sex;
+        if (req.body.role?.trim()) condiciones.role = req.body.role.trim();
+        if (req.body.sex?.trim()) condiciones.sex = req.body.sex.trim();
+        if (req.body.apellido?.trim()) condiciones.apellido = req.body.apellido.trim();
+        if (req.body.nombre?.trim()) condiciones.nombre = { $regex: req.body.nombre.trim(), $options: 'i' };
+        if (req.body.email?.trim()) condiciones.email = { $regex: req.body.email.trim(), $options: 'i' };
+        if (req.body.vip?.trim()) condiciones.vip = { $regex: req.body.vip.trim(), $options: 'i'};
+       
 
-        // Búsqueda parcial (case-insensitive)
-        if (req.body.nombre) condiciones.nombre = { $regex: req.body.nombre, $options: 'i' };
-        if (req.body.email) condiciones.email = { $regex: req.body.email, $options: 'i' };
-
-        // Fecha exacta o búsqueda por rango de fechas
         if (req.body.birthday) {
-            if (typeof req.body.birthday === 'object' && req.body.birthday.start && req.body.birthday.end) {
-                condiciones.birthday = { $gte: new Date(req.body.birthday.start), $lte: new Date(req.body.birthday.end) };
+            if (req.body.birthday.start && req.body.birthday.end) {
+                condiciones.birthday = {
+                    $gte: new Date(req.body.birthday.start),
+                    $lte: new Date(req.body.birthday.end)
+                };
             } else {
-                condiciones.birthday = new Date(req.body.birthday);
+                const exactDate = new Date(req.body.birthday);
+                if (!isNaN(exactDate)) {
+                    condiciones.birthday = exactDate;
+                }
             }
         }
 
-        // Consulta a la base de datos
-        const data = await ModelUser.find(condiciones);
+        const data = await usuarios.find(condiciones);
         if (data.length === 0) {
             return res.status(404).json({ message: 'Documento no encontrado' });
         }
@@ -123,8 +151,10 @@ router.post('/getFilter', async (req, res) => {
     }
 });
 
+// Actualizar usuario por username
 
-router.patch("/update", async (req, res) => {
+router.post("/update/:id", async (req, res) => {
+
     try {
       const { id } = req.params; // El id del usuario a actualizar
       const {
@@ -177,10 +207,12 @@ router.patch("/update", async (req, res) => {
       // Responde con el usuario actualizado
       res.status(200).json(usuario);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+      res.status(400).json({ error: error.message });
     }
-});
+  });
 
+
+// Eliminar usuario por email
 router.delete("/delete", async (req, res) => {
     try {
         const { email } = req.body;
@@ -189,7 +221,7 @@ router.delete("/delete", async (req, res) => {
             return res.status(400).json({ message: "El email es requerido" });
         }
 
-        const resultado = await ModelUser.deleteOne({ email });
+        const resultado = await usuarios.deleteOne({ email });
 
         if (resultado.deletedCount === 0) {
             return res.status(404).json({ message: "Usuario no encontrado" });
@@ -201,4 +233,4 @@ router.delete("/delete", async (req, res) => {
     }
 });
 
-module.exports =router;
+module.exports = router;
