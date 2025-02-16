@@ -51,7 +51,7 @@ router.get("/habitacion", async (req, res) =>{
         habitaciones.forEach(habitacion =>{
           habitacion["fotos"] = habitacion["fotos"].map(url => baseurl + url)
         })
-        console.log(habitaciones)
+      
         res.status(200).json(habitaciones)
         
     }catch(error){
@@ -71,7 +71,7 @@ router.get("/habitacion/:id", async (req, res) =>{
 })
 
 //crea una habitación
-router.post("/habitacion",  upload.array("imagen"), async (req, res) =>{
+router.post("/habitacion",  upload.single("imagen"), async (req, res) =>{
     try{
         // Convertir el JSON recibido a objeto JavaScript
         let habitacionData = JSON.parse(req.body.habitacion);
@@ -89,7 +89,7 @@ router.post("/habitacion",  upload.array("imagen"), async (req, res) =>{
           },
           descripcion: habitacionData.descripcion,
           precio: habitacionData.precio,
-          fotos: ["imagen"], // Aquí almacenamos las rutas de las imágenes subidas
+          fotos: [req.file.path], // Aquí almacenamos las rutas de las imágenes subidas
           camas: {
               individual: habitacionData.camas.individual,
               doble: habitacionData.camas.doble
@@ -98,7 +98,6 @@ router.post("/habitacion",  upload.array("imagen"), async (req, res) =>{
           disponible: habitacionData.disponible,
           piso: habitacionData.piso
       });
-      console.log(nuevaHabitacion)
         // Guardar en MongoDB
         await nuevaHabitacion.save();
         res.status(200).json(nuevaHabitacion)
