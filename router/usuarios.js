@@ -3,6 +3,8 @@ const router = express.Router();
 const usuarios = require('../modules/usuarios'); // Importa el modelo correctamente
 const mongoose = require('mongoose'); // Asegúrate de importar mongoose
 const bcrypt= require('bcrypt');
+const saltRounds = parseInt(process.env.SALT_ROUNDS, 10);
+
 
 // Obtener todos los usuarios
 router.get("/users", async (req, res) => {
@@ -51,7 +53,7 @@ router.post('/logincorporate', async (req, res) => {
 router.post('/loginApp', async (req, res) => {
     try {
 
-        Console.log('Entra al login');
+        console.log('Entra al login');
         // Validaciones
         if (!req.body || !req.body.email || !req.body.password) {
             return res.status(400).json({ error: "Email y contraseña son requeridos" });
@@ -63,6 +65,7 @@ router.post('/loginApp', async (req, res) => {
             return res.status(400).json({ error: 'Usuario no encontrado' });
         }
 
+        
         const validPassword = await bcrypt.compare(req.body.password, user.password);
 
         if (!validPassword) {
