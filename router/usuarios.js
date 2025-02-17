@@ -53,7 +53,6 @@ router.post('/logincorporate', async (req, res) => {
 router.post('/loginApp', async (req, res) => {
     try {
 
-        console.log('Entra al login');
         // Validaciones
         if (!req.body || !req.body.email || !req.body.password) {
             return res.status(400).json({ error: "Email y contraseña son requeridos" });
