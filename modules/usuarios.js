@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const UserSchema = new mongoose.Schema({ 
 
  nombre: { 
-   qrequired: true, 
+   required: true, 
    type: String, 
  }, 
  apellido: { 
@@ -36,6 +36,7 @@ const UserSchema = new mongoose.Schema({
  vip:{
     required: true, 
     type: Boolean, 
+    default: false,
  },
  role: {
     type: String,
