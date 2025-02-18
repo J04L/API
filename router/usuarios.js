@@ -3,6 +3,8 @@ const router = express.Router();
 const usuarios = require('../modules/usuarios'); // Importa el modelo correctamente
 const mongoose = require('mongoose'); // Asegúrate de importar mongoose
 const bcrypt= require('bcrypt');
+const saltRounds = parseInt(process.env.SALT_ROUNDS, 10);
+
 
 // Obtener todos los usuarios
 router.get("/users", async (req, res) => {
@@ -15,7 +17,7 @@ router.get("/users", async (req, res) => {
 });
 
 // Endpoint de login
-router.post('/login', async (req, res) => {
+router.post('/logincorporate', async (req, res) => {
     try {
         // Validaciones
         if (!req.body || !req.body.email || !req.body.password) {
@@ -37,6 +39,38 @@ router.post('/login', async (req, res) => {
         if (user.role !== 'Administrador' && user.role !== 'Empleado') {
             return res.status(403).json({ error: 'Acceso denegado. Solo los Empleados/Administradores pueden iniciar sesión.' });
         }
+
+        // ✅ Si pasa todas las validaciones, se devuelve el usuario (sin la contraseña)
+        const { password, ...userData } = user.toObject();  // Elimina la contraseña de la respuesta
+        return res.status(200).json({ message: 'Login exitoso', user: userData });
+
+    } catch (error) {
+        console.error("Error en /login:", error);
+        return res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
+
+router.post('/loginApp', async (req, res) => {
+    try {
+
+        // Validaciones
+        if (!req.body || !req.body.email || !req.body.password) {
+            return res.status(400).json({ error: "Email y contraseña son requeridos" });
+        }
+
+        const user = await usuarios.findOne({ email: req.body.email });
+
+        if (!user) {
+            return res.status(400).json({ error: 'Usuario no encontrado' });
+        }
+
+        
+        const validPassword = await bcrypt.compare(req.body.password, user.password);
+
+        if (!validPassword) {
+            return res.status(400).json({ error: 'Contraseña no válida' });
+        }
+
 
         // ✅ Si pasa todas las validaciones, se devuelve el usuario (sin la contraseña)
         const { password, ...userData } = user.toObject();  // Elimina la contraseña de la respuesta
