@@ -37,7 +37,6 @@ router.get("/habitacion", async (req, res) =>{
               ]
           };
       }
-
       // Filtrar por disponibilidad
       if (disponible !== undefined) filtro.disponible = disponible === "true";
 
@@ -47,7 +46,7 @@ router.get("/habitacion", async (req, res) =>{
         
         const habitaciones = await Habitacion.find(filtro)
 
-        const baseurl = "http://localhost:3036/img/"
+        const baseurl = "http://localhost:3036/"
         habitaciones.forEach(habitacion =>{
           habitacion["fotos"] = habitacion["fotos"].map(url => baseurl + url)
         })
@@ -75,6 +74,7 @@ router.post("/habitacion",  upload.single("imagen"), async (req, res) =>{
     try{
         // Convertir el JSON recibido a objeto JavaScript
         let habitacionData = JSON.parse(req.body.habitacion);
+        
         // Agregar las rutas de las imágenes al objeto antes de guardarlo
         let nuevaHabitacion = new Habitacion({
           numeroHabitacion: habitacionData.numeroHabitacion,
@@ -94,7 +94,7 @@ router.post("/habitacion",  upload.single("imagen"), async (req, res) =>{
               individual: habitacionData.camas.individual,
               doble: habitacionData.camas.doble
           },
-          dimensiones: habitacionData.dimesiones, // Corregí el nombre de la propiedad a "dimensiones"
+          dimensiones: habitacionData.dimesiones, 
           disponible: habitacionData.disponible,
           piso: habitacionData.piso
       });
@@ -153,6 +153,7 @@ router.put('/habitacion/:numero', async (req, res) => {
         {numeroHabitacion: req.params.numero},
         {$set: req.body}
       )
+      console.log(habitacion)
       if (habitacion.modifiedCount > 0) {
         res.json({ message: "Habitación actualizada correctamente" });
     } else {
