@@ -3,6 +3,8 @@ const modelReservas = require('../modules/modelReservas.js');
 const router = express.Router();
 const { Habitacion } = require("../modules/habitaciones.js"); // Ajusta la ruta según tu proyecto
 const nodemailer = require('nodemailer');
+const moment = require('moment');
+
 require('dotenv').config();
 module.exports = router;
 
@@ -79,6 +81,9 @@ router.post('/new', async (req, res) => {
         cuna: req.body.cuna,
         camaExtra: req.body.camaExtra,
     });
+    console.log("NUEVO");
+    
+console.log(req.body);
 
     try {
         const dataToSave = await data.save();
@@ -132,6 +137,10 @@ router.post('/new', async (req, res) => {
 
 router.patch("/update", async (req, res) => { 
     try { 
+        console.log("UPDATE");
+        console.log(req.body);
+        
+        
         const { _id, n_habitacion, huespedEmail, huespedDni, f_Inicio, f_Final, ...updatedData } = req.body;
 
         // Verificar que haya al menos un criterio de búsqueda
@@ -192,6 +201,32 @@ if (!habitacionExistente) {
    
 router.delete('/delete', async (req, res) => {
     try {
+        console.log(req.body);
+        
+        const { _id } = req.body;
+
+        // Validar que se envió un _id
+        if (!_id) {
+            return res.status(400).json({ message: "Debe proporcionar un _id para eliminar la reserva." });
+        }
+
+        // Intentar eliminar la reserva
+        const data = await modelReservas.deleteOne({ _id });
+
+        if (data.deletedCount === 0) {
+            return res.status(404).json({ message: "Reserva no encontrada." });
+        }
+
+        res.status(200).json({ message: `Reserva con _id ${_id} eliminada exitosamente.` });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+router.post('/deleteapp', async (req, res) => {
+    try {
+        console.log(req.body);
+        
         const { _id } = req.body;
 
         // Validar que se envió un _id
@@ -266,7 +301,8 @@ router.post('/reservas', async (req, res) => {
   
         // Intentar obtener las reservas que coincidan con los filtros
         const reservas = await modelReservas.find(filtros);
-  
+        console.log(reservas);
+
         // Si no se encuentran reservas, devolver un mensaje
         if (reservas.length === 0) {
             return res.status(404).json({ message: 'No se encontraron reservas con esos filtros' });
@@ -274,27 +310,29 @@ router.post('/reservas', async (req, res) => {
   
         // Si se encuentran reservas, devolverlas
         res.status(200).json(reservas);
-        console.log(filtros);
     } catch (error) {
         console.error('Error al obtener reservas:', error);
         res.status(500).json({ message: 'Error al obtener las reservas', error: error.message });
     }
-    console.log("Fecha de inicio recibida:", req.body.f_Inicio);
 
 
 });
 
+
+// Cambiar formato de las fechas recibidas
 router.post("/habitaciones/libres", async (req, res) => {
     try {
         console.log(req.body);
         const { capacidad, fecha_inicio, fecha_fin, tipo, vip, oferta, extras } = req.body;
 
+        // Verificar que las fechas existan
         if (!fecha_inicio || !fecha_fin) {
             return res.status(400).json({ error: "Las fechas de entrada y salida son obligatorias." });
         }
 
-        const fechaInicio = new Date(fecha_inicio);
-        const fechaFin = new Date(fecha_fin);
+        // Usar moment para formatear las fechas a yyyy/MM/dd
+        const fechaInicio = moment(fecha_inicio, "YYYY/MM/DD").toDate();
+        const fechaFin = moment(fecha_fin, "YYYY/MM/DD").toDate();
 
         if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
             return res.status(400).json({ error: "Las fechas proporcionadas no son válidas." });
@@ -336,12 +374,14 @@ router.post("/habitaciones/libres", async (req, res) => {
         filtro["numeroHabitacion"] = { $nin: habitacionesOcupadas };
 
         const habitacionesDisponibles = await Habitacion.find(filtro);
+        
         res.json(habitacionesDisponibles);
     } catch (error) {
         console.error("Error al obtener habitaciones disponibles:", error);
         res.status(500).json({ error: "Error interno del servidor" });
     }
 });
+
 
 
 router.post('/comprobar', async (req, res) => {

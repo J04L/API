@@ -39,7 +39,7 @@ const modelRerservasApp = new mongoose.Schema({
         type: String,
     },
     trabajadorEmail: {
-        required: true,
+        required: false,
         type: String,
     },
     numeroHuespedes: {
@@ -51,7 +51,7 @@ const modelRerservasApp = new mongoose.Schema({
         type: Number,
     },
     precio_total: {
-        required: true,
+        required: false,
         type: Number,
     },
     cuna: {
