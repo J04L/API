@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
+const { Habitacion } = require("./habitaciones.js"); // Ajusta la ruta si es necesario
 
 const modelRerservasApp = new mongoose.Schema({
-   
     n_habitacion: {
         required: true,
-        type: String,
+        type: String, // Asegura que coincida con Habitacion.numeroHabitacion
     },
     tipo_habitacion: {
         required: true,
@@ -18,7 +18,6 @@ const modelRerservasApp = new mongoose.Schema({
         required: true,
         type: Date,
     },
-    
     totalDias: {
         required: true,
         type: Number,
@@ -40,10 +39,9 @@ const modelRerservasApp = new mongoose.Schema({
         type: String,
     },
     trabajadorEmail: {
-        required: true,
+        required: false,
         type: String,
     },
-   
     numeroHuespedes: {
         required: true,
         type: Number,
@@ -52,25 +50,28 @@ const modelRerservasApp = new mongoose.Schema({
         required: true,
         type: Number,
     },
-    
     precio_total: {
-        required: true,
+        required: false,
         type: Number,
     },
     cuna: {
         required: false,
         type: Boolean,
     },
-    camaExtra:{
-        require: false,
+    camaExtra: {
+        required: false, // Corregido
         type: Boolean,
     },
-    notificar:{
-        require: false,
+    notificar: {
+        required: false, // Corregido
         type: Boolean,
     }
+});
 
-    
+// Pre-save hook para calcular totalDias automáticamente
+modelRerservasApp.pre("save", function (next) {
+    this.totalDias = Math.ceil((this.f_Final - this.f_Inicio) / (1000 * 60 * 60 * 24));
+    next();
 });
 
 module.exports = mongoose.model("reservas", modelRerservasApp);

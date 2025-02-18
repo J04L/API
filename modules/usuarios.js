@@ -2,9 +2,13 @@ const mongoose = require("mongoose");
 const UserSchema = new mongoose.Schema({ 
 
  nombre: { 
-   qrequired: true, 
+   required: true, 
    type: String, 
  }, 
+ apellido: { 
+   required: true, 
+   type: String, 
+ },
  email: { 
    required: true, 
    type: String, 
@@ -13,10 +17,6 @@ const UserSchema = new mongoose.Schema({
     required: true, 
     type: String, 
  },
- username: { 
- required: true, 
- type: String, 
- }, 
  password: { 
     required: true, 
     type: String, 
@@ -36,10 +36,11 @@ const UserSchema = new mongoose.Schema({
  vip:{
     required: true, 
     type: Boolean, 
+    default: false,
  },
  role: {
     type: String,
-    enum: ["Admin","Empleado", "Cliente"], // Roles permitidos
+    enum: ["Administrador","Empleado", "Cliente"], // Roles permitidos
     default: "Cliente", // Rol por defecto
  },   
  avatar: {
