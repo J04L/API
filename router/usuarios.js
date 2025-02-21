@@ -85,7 +85,6 @@ router.post('/loginApp', async (req, res) => {
 
 // Crear un nuevo usuario
 router.post("/newUser", async (req, res) => {
-    console.log("Request body:", req.body);
     try {
         let { password, ...userData } = req.body;
         if (!password) {
@@ -102,7 +101,6 @@ router.post("/newUser", async (req, res) => {
         });
         const guardarUsuario = await nuevoUsuario.save();
         res.status(200).json(guardarUsuario);
-        console.log("Usuario guardado con éxito");
     } catch (error) {
         console.error("Error al crear usuario:", error);
         res.status(400).json({ message: "Error al crear usuario", error });
@@ -134,7 +132,6 @@ router.post("/getOne", async (req, res) => {
 // Buscar usuario por ID
 router.post("/getById", async (req, res) => {
     try {
-        console.log(req.body);
         const { id } = req.body;
 
         const usuarioDB = await usuarios.findById(id);
